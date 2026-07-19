@@ -1,0 +1,431 @@
+{
+  "resourceType": "Bundle",
+  "type": "collection",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "p001",
+        "gender": "female"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "p002",
+        "gender": "female"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "p003",
+        "gender": "female"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "p004",
+        "gender": "female"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "p005",
+        "gender": "female"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "p006",
+        "gender": "female"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "p007",
+        "gender": "female"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "p008",
+        "gender": "female"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "p009",
+        "gender": "female"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "p010",
+        "gender": "male"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "p011",
+        "gender": "male"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "p012",
+        "gender": "male"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "p013",
+        "gender": "male"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "p014",
+        "gender": "other"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "p015",
+        "gender": "female"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "p016",
+        "gender": "female"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "p017",
+        "gender": "male"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "c001",
+        "subject": {
+          "reference": "Patient/p001"
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "E11.9",
+              "display": "Type 2 diabetes mellitus without complications"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "c002",
+        "subject": {
+          "reference": "Patient/p002"
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "E11.9",
+              "display": "Type 2 diabetes mellitus without complications"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "c003",
+        "subject": {
+          "reference": "Patient/p003"
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "E11.9",
+              "display": "Type 2 diabetes mellitus without complications"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "c004",
+        "subject": {
+          "reference": "Patient/p004"
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "E11.9",
+              "display": "Type 2 diabetes mellitus without complications"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "c005",
+        "subject": {
+          "reference": "Patient/p005"
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "E11.9",
+              "display": "Type 2 diabetes mellitus without complications"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "c006",
+        "subject": {
+          "reference": "Patient/p006"
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "E11.9",
+              "display": "Type 2 diabetes mellitus without complications"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "c007",
+        "subject": {
+          "reference": "Patient/p007"
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "E11.9",
+              "display": "Type 2 diabetes mellitus without complications"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "c008",
+        "subject": {
+          "reference": "Patient/p008"
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "E11.9",
+              "display": "Type 2 diabetes mellitus without complications"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "c009",
+        "subject": {
+          "reference": "Patient/p009"
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "E11.9",
+              "display": "Type 2 diabetes mellitus without complications"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "c010",
+        "subject": {
+          "reference": "Patient/p010"
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "E11.9",
+              "display": "Type 2 diabetes mellitus without complications"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "c011",
+        "subject": {
+          "reference": "Patient/p011"
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "E11.9",
+              "display": "Type 2 diabetes mellitus without complications"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "c012",
+        "subject": {
+          "reference": "Patient/p012"
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "E11.9",
+              "display": "Type 2 diabetes mellitus without complications"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "c013",
+        "subject": {
+          "reference": "Patient/p013"
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "E11.9",
+              "display": "Type 2 diabetes mellitus without complications"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "c014",
+        "subject": {
+          "reference": "Patient/p014"
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "E11.9",
+              "display": "Type 2 diabetes mellitus without complications"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "c015",
+        "subject": {
+          "reference": "Patient/p015"
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "I10",
+              "display": "Essential (primary) hypertension"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "c016",
+        "subject": {
+          "reference": "Patient/p016"
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "I10",
+              "display": "Essential (primary) hypertension"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "c017",
+        "subject": {
+          "reference": "Patient/p017"
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "I10",
+              "display": "Essential (primary) hypertension"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

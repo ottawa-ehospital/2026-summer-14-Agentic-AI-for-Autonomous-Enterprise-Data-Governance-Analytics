@@ -1,0 +1,34 @@
+{
+  "receipt_id": "1781454075335-44301",
+  "timestamp": "2026-06-14T12:21:15.335-04:00",
+  "request": {
+    "raw_text": "asdfghjkl",
+    "requester_role": "research_coordinator",
+    "purpose": null,
+    "parsed_action": null
+  },
+  "decisions": [
+    {
+      "agent": "AccessControl",
+      "action": null,
+      "decision": "deny",
+      "policies_consulted": [
+        "POL-FAIL-CLOSED"
+      ],
+      "scope_granted": null,
+      "rationale": "Classifier returned no valid action label. Failing closed."
+    }
+  ],
+  "framework_mapping": {
+    "nist_ai_rmf": [
+      "GOVERN-1.1",
+      "MAP-3.4",
+      "MANAGE-4.1"
+    ],
+    "phipa_principles": [
+      "accountability"
+    ]
+  },
+  "outcome": "denied",
+  "final_artifact_hash": "cc5f4f31fc9b8e31ea84b23044dcb0677a2634a4677622456e23a0a9ce1648ca"
+}

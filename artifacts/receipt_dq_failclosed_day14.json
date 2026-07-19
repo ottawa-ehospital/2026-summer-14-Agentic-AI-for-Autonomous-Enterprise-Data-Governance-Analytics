@@ -1,0 +1,24 @@
+{
+  "receipt": {
+    "receipt_id": "1782663684556-70761",
+    "timestamp": "2026-06-28T12:21:24.556-04:00",
+    "request": { "dataset": "banana", "bundle_path": null },
+    "decisions": [
+      {
+        "agent": "DataQuality",
+        "dataset": "banana",
+        "bundle_path": null,
+        "total_resources": null,
+        "flag_count": null,
+        "flags": [],
+        "dq_error": "DQ-FAIL-CLOSED"
+      }
+    ],
+    "framework_mapping": {
+      "nist_ai_rmf": ["MAP-3.4", "MEASURE-2.7"],
+      "mapping_note": "PHIPA principles not engaged: data quality is an internal integrity check, not an access decision."
+    },
+    "outcome": "flagged",
+    "final_artifact_hash": "4519b12be4936b872ae8e2c244d6dcf03fd6eda5a1ae51fa12feeb1bec150e2b"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "receipt_id": "1780152032893-53927",
+  "timestamp": "2026-05-30T10:40:32.893-04:00",
+  "request": {
+    "raw_text": "I am a research coordinator and I need a cohort of patients with type 2 diabetes for an outcomes study.",
+    "requester_role": "research_coordinator",
+    "purpose": "diabetes outcomes study"
+  },
+  "decisions": [
+    {
+      "agent": "AccessControl",
+      "action": "cohort_construction",
+      "decision": "allow",
+      "policies_consulted": [
+        "POL-001",
+        "POL-002",
+        "POL-004"
+      ],
+      "scope_granted": {
+        "data_categories": [
+          "demographics",
+          "diagnoses",
+          "medications"
+        ]
+      },
+      "rationale": "Allowed by POL-001: Research coordinator can construct cohorts"
+    }
+  ],
+  "outcome": "allowed"
+}

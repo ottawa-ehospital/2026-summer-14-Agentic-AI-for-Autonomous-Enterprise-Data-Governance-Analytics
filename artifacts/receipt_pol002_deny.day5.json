@@ -1,0 +1,24 @@
+{
+  "receipt_id": "1780153634777-53738",
+  "timestamp": "2026-05-30T11:07:14.777-04:00",
+  "request": {
+    "raw_text": "I am a research coordinator and I want to read the clinical notes for patient encounters last month.",
+    "requester_role": "research_coordinator",
+    "purpose": "qualitative review"
+  },
+  "decisions": [
+    {
+      "agent": "AccessControl",
+      "action": "clinical_notes_access",
+      "decision": "deny",
+      "policies_consulted": [
+        "POL-001",
+        "POL-002",
+        "POL-004"
+      ],
+      "scope_granted": null,
+      "rationale": "Denied by POL-002: Research coordinator cannot access clinical notes"
+    }
+  ],
+  "outcome": "denied"
+}

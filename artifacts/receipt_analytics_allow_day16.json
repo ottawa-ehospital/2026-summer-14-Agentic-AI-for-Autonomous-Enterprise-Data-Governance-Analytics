@@ -1,0 +1,71 @@
+{
+  "receipt_id": "1783639821065-11040",
+  "timestamp": "2026-07-09T19:30:21.065-04:00",
+  "chained_from": {
+    "access_receipt_id": "1783639815914-80237",
+    "access_receipt_hash": "461fdd7f4a1aa3dbb63dc09674f1dd47161c7b2cd47d7a97675a716ea0887af5"
+  },
+  "request": {
+    "measure": "distinct_patient_count",
+    "condition_code": "E11.9",
+    "group_by": "Patient.gender",
+    "bundle_path": "data/cohort_bundle.json"
+  },
+  "decisions": [
+    {
+      "agent": "Analytics",
+      "query": {
+        "measure": "distinct_patient_count",
+        "condition_code": "E11.9",
+        "condition_system": "http://hl7.org/fhir/sid/icd-10-cm",
+        "group_by": "Patient.gender",
+        "bundle_path": "data/cohort_bundle.json"
+      },
+      "safeguard": {
+        "name": "small_cell_suppression",
+        "minimum_cell_size": 5,
+        "threshold_source": {
+          "policy_id": "POL-007",
+          "precondition_id": "PRE-AGG-SUPPRESSION",
+          "basis": "CIHI minimum cell size of 5, small-cell suppression for de-identification"
+        },
+        "enforced_by": "Analytics"
+      },
+      "cohort_size": 14,
+      "cells": [
+        {
+          "gender": "female",
+          "count": 9,
+          "suppressed": false
+        },
+        {
+          "gender": "male",
+          "count": null,
+          "suppressed": true
+        },
+        {
+          "gender": "other",
+          "count": null,
+          "suppressed": true
+        }
+      ],
+      "suppressed_cell_count": 2,
+      "flags": []
+    }
+  ],
+  "framework_mapping": {
+    "nist_ai_rmf": [
+      "GOVERN-1.1",
+      "MAP-3.4",
+      "MEASURE-2.7",
+      "MANAGE-4.1"
+    ],
+    "phipa_principles": [
+      "limiting_use",
+      "accountability"
+    ],
+    "mapping_note": "Disclosure safeguard (small-cell suppression) enforced at the analytics layer using the threshold declared by the governing policy."
+  },
+  "outcome": "released",
+  "final_artifact_hash": "2d5081f34dedfd5476a1b36a9ccb0d8e5e4724d9f89c403e9e0a799c922527a5"
+}

@@ -1,0 +1,51 @@
+{
+  "receipt_id": "1782684061873-85528",
+  "timestamp": "2026-06-28T18:01:01.874-04:00",
+  "request": {
+    "raw_text": "Give me summary counts of diabetes diagnoses broken down by age group",
+    "requester_role": "research_coordinator",
+    "purpose": "secondary_use_analytics",
+    "parsed_action": "aggregate_statistics"
+  },
+  "decisions": [
+    {
+      "agent": "AccessControl",
+      "action": "aggregate_statistics",
+      "jurisdiction": "ON",
+      "decision": "allow",
+      "policies_consulted": [
+        "POL-001",
+        "POL-002",
+        "POL-004",
+        "POL-005",
+        "POL-006",
+        "POL-007"
+      ],
+      "scope_granted": {
+        "data_categories": [
+          "demographics",
+          "diagnoses",
+          "medications"
+        ]
+      },
+      "preconditions_satisfied": [
+        {
+          "precondition_id": "PRE-AGG-SUPPRESSION",
+          "basis": "CIHI minimum cell size of 5, small-cell suppression for de-identification"
+        }
+      ],
+      "rationale": "Allowed by POL-007: Research coordinator can run aggregate statistics (small-cell suppression required) (preconditions satisfied)"
+    }
+  ],
+  "framework_mapping": {
+    "nist_ai_rmf": [
+      "GOVERN-1.1",
+      "MAP-3.4"
+    ],
+    "phipa_principles": [
+      "accountability"
+    ]
+  },
+  "outcome": "allowed",
+  "final_artifact_hash": "c48c02a19bb2cc427da015ba7157ccab31aac3b5ad2f8cdd8fd09424c919cc90"
+}

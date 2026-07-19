@@ -1,0 +1,90 @@
+{
+  "policies": [
+    {
+      "policy_id": "POL-001",
+      "name": "Research coordinator can construct cohorts",
+      "applies_to_role": "research_coordinator",
+      "permits": ["cohort_construction"],
+      "scope": {
+       "data_categories": ["demographics", "diagnoses", "medications"]
+      },
+      "phipa_principle": "limiting_use",
+      "audit_required": true
+    },
+    {
+      "policy_id": "POL-002",
+      "name": "Research coordinator cannot access clinical notes",
+      "applies_to_role": "research_coordinator",
+      "forbids": ["clinical_notes_access"],
+      "phipa_principle": "limiting_use",
+      "audit_required": true
+    },
+    {
+      "policy_id": "POL-003",
+      "name": "Billing analyst cannot construct research cohorts",
+      "applies_to_role": "billing_analyst",
+      "forbids": ["cohort_construction"],
+      "phipa_principle": "limiting_use",
+      "audit_required": true
+    },
+    {
+      "policy_id": "POL-004",
+      "name": "All access requests must be audited",
+      "applies_to_role": "*",
+      "audit_required": true,
+      "phipa_principle": "accountability"
+    },
+    {
+      "policy_id": "POL-005",
+      "name": "Research coordinator can export records (Ontario)",
+      "jurisdiction": "ON",
+      "applies_to_role": "research_coordinator",
+      "permits": ["record_export"],
+      "scope": {
+        "data_categories": ["demographics", "diagnoses", "medications"]
+      },
+      "preconditions": [],
+      "phipa_principle": "limiting_use",
+      "audit_required": true
+    },
+    {
+      "policy_id": "POL-006",
+      "name": "Research coordinator can export records (Alberta)",
+      "jurisdiction": "AB",
+      "applies_to_role": "research_coordinator",
+      "permits": ["record_export"],
+      "scope": {
+        "data_categories": ["demographics", "diagnoses", "medications"]
+      },
+      "preconditions": [
+        {
+          "precondition_id": "PRE-AB-AGREEMENT",
+          "requires": "written_agreement_exists",
+          "applies_when": { "export_destination": "out_of_province" },
+          "basis": "Alta Reg 70/2001 s.8(4)"
+        }
+      ],
+      "phipa_principle": "not_applicable",
+      "audit_required": true
+    },
+    {
+      "policy_id": "POL-007",
+      "name": "Research coordinator can run aggregate statistics (small-cell suppression required)",
+      "applies_to_role": "research_coordinator",
+      "permits": ["aggregate_statistics"],
+      "scope": {
+        "data_categories": ["demographics", "diagnoses", "medications"]
+      },
+      "preconditions": [
+        {
+          "precondition_id": "PRE-AGG-SUPPRESSION",
+          "requires": "small_cell_suppression_applied",
+          "minimum_cell_size": 5,
+          "basis": "CIHI minimum cell size of 5, small-cell suppression for de-identification"
+        }
+      ],
+      "phipa_principle": "limiting_use",
+      "audit_required": true
+    }
+  ]
+}

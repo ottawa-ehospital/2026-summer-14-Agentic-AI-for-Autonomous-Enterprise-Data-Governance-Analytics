@@ -1,0 +1,41 @@
+{
+  "receipt_id": "1782596699562-18556",
+  "timestamp": "2026-06-27T17:44:59.563-04:00",
+  "request": {
+    "raw_text": "export this patient's full record to the external registry",
+    "requester_role": "research_coordinator",
+    "purpose": null,
+    "parsed_action": "record_export"
+  },
+  "decisions": [
+    {
+      "agent": "AccessControl",
+      "action": "record_export",
+      "jurisdiction": "AB",
+      "decision": "deny",
+      "policies_consulted": [
+        "POL-001",
+        "POL-002",
+        "POL-004",
+        "POL-005",
+        "POL-006",
+        "POL-PRECONDITION-UNMET"
+      ],
+      "scope_granted": null,
+      "preconditions_satisfied": null,
+      "rationale": "Permitted by POL-006 but precondition PRE-AB-AGREEMENT (Alta Reg 70/2001 s.8(4)) is not met. Failing closed."
+    }
+  ],
+  "framework_mapping": {
+    "nist_ai_rmf": [
+      "GOVERN-1.1",
+      "MAP-3.4",
+      "MANAGE-4.1"
+    ],
+    "phipa_principles": [
+      "accountability"
+    ]
+  },
+  "outcome": "denied",
+  "final_artifact_hash": "0760cdaf5668b2072ef7d2136d50efb2d9655f986330479ed5d4383e3c4b057c"
+}
