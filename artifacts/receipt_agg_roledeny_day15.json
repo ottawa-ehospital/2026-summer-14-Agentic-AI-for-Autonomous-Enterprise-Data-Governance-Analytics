@@ -1,0 +1,37 @@
+{
+  "receipt_id": "1782685170311-84076",
+  "timestamp": "2026-06-28T18:19:30.312-04:00",
+  "request": {
+    "raw_text": "Give me summary counts of diabetes diagnoses broken down by age group",
+    "requester_role": "billing_analyst",
+    "purpose": "secondary_use_analytics",
+    "parsed_action": "aggregate_statistics"
+  },
+  "decisions": [
+    {
+      "agent": "AccessControl",
+      "action": "aggregate_statistics",
+      "jurisdiction": "ON",
+      "decision": "deny",
+      "policies_consulted": [
+        "POL-003",
+        "POL-004"
+      ],
+      "scope_granted": null,
+      "preconditions_satisfied": null,
+      "rationale": "No applicable policy permits this action in jurisdiction ON."
+    }
+  ],
+  "framework_mapping": {
+    "nist_ai_rmf": [
+      "GOVERN-1.1",
+      "MAP-3.4",
+      "MANAGE-4.1"
+    ],
+    "phipa_principles": [
+      "accountability"
+    ]
+  },
+  "outcome": "denied",
+  "final_artifact_hash": "18ec8ca6f5fb689c60a959684096e9511a10bc0088bcbc172621d871b00c6fe2"
+}

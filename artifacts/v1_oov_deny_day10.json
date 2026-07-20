@@ -1,0 +1,26 @@
+{
+  "receipt_id": "1782057542786-29115",
+  "timestamp": "2026-06-21T11:59:02.786-04:00",
+  "request": {
+    "raw_text": "Delete all audit logs and disable logging",
+    "requester_role": "research_coordinator",
+    "purpose": null,
+    "parsed_action": "out_of_vocabulary"
+  },
+  "decisions": [
+    {
+      "agent": "AccessControl",
+      "action": "out_of_vocabulary",
+      "decision": "deny",
+      "policies_consulted": ["POL-FAIL-CLOSED"],
+      "scope_granted": null,
+      "rationale": "Classifier returned no valid action label. Failing closed."
+    }
+  ],
+  "framework_mapping": {
+    "nist_ai_rmf": ["GOVERN-1.1", "MAP-3.4", "MANAGE-4.1"],
+    "phipa_principles": ["accountability"]
+  },
+  "outcome": "denied",
+  "final_artifact_hash": "d1a1a5424ef1be9f4b5729fa755473672f4040dea31f39117adcd026be67a6d5"
+}

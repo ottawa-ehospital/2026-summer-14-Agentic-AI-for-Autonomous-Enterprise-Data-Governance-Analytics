@@ -1,0 +1,29 @@
+{
+  "receipt": {
+    "receipt_id": "1782663642934-38468",
+    "timestamp": "2026-06-28T12:20:42.934-04:00",
+    "request": { "dataset": "corrupted", "bundle_path": "data/corrupted_bundle.json" },
+    "decisions": [
+      {
+        "agent": "DataQuality",
+        "dataset": "corrupted",
+        "bundle_path": "data/corrupted_bundle.json",
+        "total_resources": 9,
+        "flag_count": 4,
+        "flags": [
+          { "resource_id": "obs-2", "resource_type": "Observation", "check": "missing_required_field", "concern": "completeness", "detail": "Observation.status is missing" },
+          { "resource_id": "obs-3", "resource_type": "Observation", "check": "missing_required_field", "concern": "completeness", "detail": "Observation.code is missing" },
+          { "resource_id": "obs-4", "resource_type": "Observation", "check": "invalid_terminology_code", "concern": "conformance", "detail": "Observation code 99999-9 not in allowlist" },
+          { "resource_id": "condition-2", "resource_type": "Condition", "check": "invalid_terminology_code", "concern": "conformance", "detail": "Condition code E11.99 not in allowlist" }
+        ],
+        "dq_error": null
+      }
+    ],
+    "framework_mapping": {
+      "nist_ai_rmf": ["MAP-3.4", "MEASURE-2.7"],
+      "mapping_note": "PHIPA principles not engaged: data quality is an internal integrity check, not an access decision."
+    },
+    "outcome": "flagged",
+    "final_artifact_hash": "8ef9ba16976be1114e2244574de156fa1b0baefa2fe8a65d55dabc7b4bf8523e"
+  }
+}

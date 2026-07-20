@@ -1,0 +1,45 @@
+{
+  "receipt_id": "1782597330876-99419",
+  "timestamp": "2026-06-27T17:55:30.877-04:00",
+  "request": {
+    "raw_text": "I need to build a cohort of diabetic patients for our research study",
+    "requester_role": "research_coordinator",
+    "purpose": null,
+    "parsed_action": "cohort_construction"
+  },
+  "decisions": [
+    {
+      "agent": "AccessControl",
+      "action": "cohort_construction",
+      "jurisdiction": null,
+      "decision": "allow",
+      "policies_consulted": [
+        "POL-001",
+        "POL-002",
+        "POL-004",
+        "POL-005",
+        "POL-006"
+      ],
+      "scope_granted": {
+        "data_categories": [
+          "demographics",
+          "diagnoses",
+          "medications"
+        ]
+      },
+      "preconditions_satisfied": null,
+      "rationale": "Allowed by POL-001: Research coordinator can construct cohorts"
+    }
+  ],
+  "framework_mapping": {
+    "nist_ai_rmf": [
+      "GOVERN-1.1",
+      "MAP-3.4"
+    ],
+    "phipa_principles": [
+      "accountability"
+    ]
+  },
+  "outcome": "allowed",
+  "final_artifact_hash": "c63444a35cdf63f892cc05e33c3842a0d5a5a7908fa3d21e7a3fb65a8f11ada0"
+}

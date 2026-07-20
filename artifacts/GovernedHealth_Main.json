@@ -1,0 +1,717 @@
+{
+  "name": "GovernedHealth Main",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "governedhealth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -160,
+        0
+      ],
+      "id": "42947b9e-6ac3-41f2-99d0-1a27b93616d6",
+      "name": "Webhook",
+      "webhookId": "826bb777-f310-422b-85ca-3cb7126a75d2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8d64ab76-f1a1-445e-bb9a-4f58aae0c60b",
+              "name": "request_text",
+              "value": "={{ $json.body.request_text }}",
+              "type": "string"
+            },
+            {
+              "id": "d1dad0b3-f85c-49cf-af44-e54da80498f6",
+              "name": "requester_role",
+              "value": "={{ $json.body.requester_role }}",
+              "type": "string"
+            },
+            {
+              "id": "16ce8bf9-9cb8-4ee2-b84a-91b65b035d9c",
+              "name": "purpose",
+              "value": "={{ $json.body.purpose }}",
+              "type": "string"
+            },
+            {
+              "id": "ce277799-45c9-4b93-a196-9882f50d6baa",
+              "name": "receipt_id",
+              "value": "={{ $now.toMillis() }}-{{ Math.floor(Math.random()*100000) }}",
+              "type": "string"
+            },
+            {
+              "id": "71619553-7b2e-4fa7-962e-b2738b44d666",
+              "name": "timestamp",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "f4bbb2de-836f-426e-85c0-e6b9267b5aed",
+              "name": "jurisdiction",
+              "value": "={{ $json.body.jurisdiction }}",
+              "type": "string"
+            },
+            {
+              "id": "0d77196e-011c-4169-8f03-00b6f1591f03",
+              "name": "export_destination",
+              "value": "={{ $json.body.export_destination }}",
+              "type": "string"
+            },
+            {
+              "id": "2ddfd6ae-dc93-43f3-b371-c28e156df082",
+              "name": "facts",
+              "value": "={{ $json.body.facts }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        32,
+        0
+      ],
+      "id": "ce6e7c85-1d09-4113-9573-4c3b9fc80804",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $('Parse LLM Output').first().json;\nconst role = input.requester_role;\nconst action = input.parsed_action;\nconst jurisdiction = input.jurisdiction || null;\nconst facts = input.facts || {};\n\nconst VALID_ACTIONS = [\"cohort_construction\", \"clinical_notes_access\", \"aggregate_statistics\", \"record_export\"];\n\nif (action === null || action === undefined || !VALID_ACTIONS.includes(action)) {\n  return [{\n    json: Object.assign({}, input, {\n      access_decision: {\n        agent: \"AccessControl\",\n        action: action,\n        jurisdiction: jurisdiction,\n        decision: \"deny\",\n        policies_consulted: [\"POL-FAIL-CLOSED\"],\n        scope_granted: null,\n        preconditions_satisfied: null,\n        rationale: \"Classifier returned no valid action label. Failing closed.\"\n      }\n    })\n  }];\n}\n\nlet policies;\ntry {\n  const fetched = $('HTTP Request').first().json.data;\n  const parsed = JSON.parse(fetched);\n  policies = parsed.policies;\n  if (!Array.isArray(policies)) {\n    throw new Error(\"Fetched policy payload has no policies array\");\n  }\n} catch (e) {\n  return [{\n    json: Object.assign({}, input, {\n      access_decision: {\n        agent: \"AccessControl\",\n        action: action,\n        jurisdiction: jurisdiction,\n        decision: \"deny\",\n        policies_consulted: [\"POL-FETCH-FAILED\"],\n        scope_granted: null,\n        preconditions_satisfied: null,\n        rationale: \"Policy source unavailable or unparseable. Failing closed. Detail: \" + e.message\n      }\n    })\n  }];\n}\n\nfunction jurisdictionMatches(p) {\n  return !p.jurisdiction || p.jurisdiction === jurisdiction;\n}\n\nfunction appliesWhenMatches(pre) {\n  if (!pre.applies_when) return true;\n  for (const key in pre.applies_when) {\n    if (input[key] !== pre.applies_when[key]) return false;\n  }\n  return true;\n}\n\nconst applicable = policies.filter(function(p) {\n  return p.applies_to_role === role || p.applies_to_role === \"*\";\n});\nconst consulted = applicable.map(function(p) { return p.policy_id; });\n\nlet decision = \"pending\";\nlet rationale = \"No applicable policy permits this action\";\nlet scope = null;\nlet preconditionsSatisfied = null;\n\n// Forbid loop (jurisdiction-aware)\nfor (const p of applicable) {\n  if (!jurisdictionMatches(p)) continue;\n  const forbids = p.forbids || [];\n  if (forbids.indexOf(action) !== -1) {\n    decision = \"deny\";\n    rationale = \"Denied by \" + p.policy_id + \": \" + p.name;\n    break;\n  }\n}\n\n// Permit loop (jurisdiction-aware, precondition-gated). First matching jurisdiction permit governs.\nif (decision === \"pending\") {\n  for (const p of applicable) {\n    if (!jurisdictionMatches(p)) continue;\n    const permits = p.permits || [];\n    if (permits.indexOf(action) === -1) continue;\n\n    const pres = p.preconditions || [];\n    let failed = null;\n    const satisfied = [];\n    for (const pre of pres) {\n      if (!appliesWhenMatches(pre)) continue;\n      const factName = pre.requires;\n      if (!(factName in facts)) {\n        failed = { code: \"POL-PRECONDITION-UNVERIFIABLE\", pre: pre };\n        break;\n      }\n      if (facts[factName] !== true) {\n        failed = { code: \"POL-PRECONDITION-UNMET\", pre: pre };\n        break;\n      }\n      satisfied.push({ precondition_id: pre.precondition_id, basis: pre.basis });\n    }\n\n    if (failed) {\n      decision = \"deny\";\n      scope = null;\n      consulted.push(failed.code);\n      rationale = \"Permitted by \" + p.policy_id + \" but precondition \" + failed.pre.precondition_id +\n        \" (\" + failed.pre.basis + \") \" +\n        (failed.code === \"POL-PRECONDITION-UNMET\"\n          ? \"is not met. Failing closed.\"\n          : \"could not be verified from the request. Failing closed.\");\n    } else {\n      decision = \"allow\";\n      scope = p.scope || null;\n      preconditionsSatisfied = satisfied.length ? satisfied : null;\n      rationale = \"Allowed by \" + p.policy_id + \": \" + p.name +\n        (satisfied.length ? \" (preconditions satisfied)\" : \"\");\n    }\n    break;\n  }\n}\n\n// Jurisdiction-gated action, but the request carried no jurisdiction\nif (decision === \"pending\" && jurisdiction === null) {\n  const jurisdictionGated = applicable.some(function(p) {\n    const permits = p.permits || [];\n    return permits.indexOf(action) !== -1 && p.jurisdiction;\n  });\n  if (jurisdictionGated) {\n    decision = \"deny\";\n    consulted.push(\"POL-NO-JURISDICTION\");\n    rationale = \"Action '\" + action + \"' is jurisdiction-gated but the request carried no jurisdiction. Failing closed.\";\n  }\n}\n\nif (decision === \"pending\") {\n  decision = \"deny\";\n  rationale = \"No applicable policy permits this action\" +\n    (jurisdiction ? \" in jurisdiction \" + jurisdiction : \"\") + \".\";\n}\n\nreturn [{\n  json: Object.assign({}, input, {\n    access_decision: {\n      agent: \"AccessControl\",\n      action: action,\n      jurisdiction: jurisdiction,\n      decision: decision,\n      policies_consulted: consulted,\n      scope_granted: scope,\n      preconditions_satisfied: preconditionsSatisfied,\n      rationale: rationale\n    }\n  })\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        736,
+        0
+      ],
+      "id": "e2ab3864-a75b-4629-a0f4-824d4ff7a8da",
+      "name": "Access Control"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Audit and Lineage - DAY 6\n// Assembles the governance receipt with framework mapping and hash.\n \nconst crypto = require('crypto');\nconst input = $input.first().json;\n \n// Collect every agent's decision in the order they fired\nconst decisions = [];\nif (input.access_decision) decisions.push(input.access_decision);\n// Future agents (Data Quality, Analytics) will add their decisions here\n// after Phase 3 builds those branches.\n \n// Map current capabilities to NIST AI RMF functions\nconst nistMapping = [\"GOVERN-1.1\", \"MAP-3.4\"];\nif (input.access_decision && input.access_decision.decision === \"deny\") {\n  nistMapping.push(\"MANAGE-4.1\");\n}\n \n// PHIPA principles touched in this request\nconst phipaPrinciples = new Set();\nfor (const d of decisions) {\n  if (d.phipa_principle) phipaPrinciples.add(d.phipa_principle);\n}\nphipaPrinciples.add(\"accountability\"); // POL-004 always applies\n \nconst outcome = (input.access_decision && input.access_decision.decision === \"allow\")\n  ? \"allowed\"\n  : \"denied\";\n \nconst receipt = {\n  receipt_id: input.receipt_id,\n  timestamp: input.timestamp,\n  request: {\n    raw_text: input.request_text,\n    requester_role: input.requester_role,\n    purpose: input.purpose,\n    parsed_action: input.parsed_action\n  },\n  decisions: decisions,\n  framework_mapping: {\n    nist_ai_rmf: nistMapping,\n    phipa_principles: Array.from(phipaPrinciples)\n  },\n  outcome: outcome\n};\n \n// Hash the receipt for tamper-evidence\nconst hashable = JSON.stringify(receipt);\nreceipt.final_artifact_hash = crypto\n  .createHash('sha256')\n  .update(hashable)\n  .digest('hex');\n \nreturn [{ json: { receipt: receipt } }];\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        0
+      ],
+      "id": "b4095cc0-0884-4a5f-8eec-0799283ec920",
+      "name": "Audit and Lineage"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.receipt }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1552,
+        16
+      ],
+      "id": "f9cdef36-1c2a-4aad-ad98-e5509c82de10",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "claude-haiku-4-5-20251001",
+          "mode": "list",
+          "cachedResultName": "claude-haiku-4-5-20251001"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "You are a request classifier for a healthcare data governance system. Your only job is to read a natural-language data request and label it with exactly one action from this closed vocabulary:\n\n- cohort_construction\n- clinical_notes_access\n- aggregate_statistics\n- record_export\n\nRules:\n- Return only the single best-matching label, nothing else.\n- If the request does not clearly match exactly one label, return: out_of_vocabulary\n- Do not decide whether the request is allowed. Do not mention policy, law, or permissions. You only classify.\n- Return raw JSON only. Do not wrap in markdown code fences. Do not use ```json blocks. Do not add any text before or after. Start your response with { and end with }.\n- Respond with a minimal JSON object of exactly this form: {\"action\": \"<label>\"}"
+            },
+            {
+              "content": "={{ $json.request_text }}",
+              "role": "=user"
+            }
+          ]
+        },
+        "options": {
+          "system": "You are a request classifier for a data governance system. Your only job is to read a natural-language data request and label it with exactly one action from this closed vocabulary:  - cohort_construction - clinical_notes_access - aggregate_statistics - record_export  Rules: - Return only the single best-matching label, nothing else. - If the request does not clearly match exactly one label, return: out_of_vocabulary - Do not decide whether the request is allowed. Do not mention policy, law, or   permissions. You only classify. - Respond with a minimal JSON object of the form: {\"action\": \"<label>\"} ",
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "typeVersion": 1,
+      "position": [
+        176,
+        0
+      ],
+      "id": "a5f11a85-325e-4dce-bb0b-07ade0f18e7f",
+      "name": "Claude",
+      "credentials": {
+        "anthropicApi": {
+          "id": "mji44OuWHGD4k73d",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Claude's response into structured fields\nconst llmItem = $input.first().json;\nconst previousItem = $('Edit Fields').first().json;\n\n// Extract the raw text from Claude's output\nlet rawText = \"\";\nif (Array.isArray(llmItem.content) && llmItem.content[0]?.text) {\n  rawText = llmItem.content.map(c => c.text || \"\").join(\"\");\n} else if (llmItem.message && llmItem.message.content) {\n  if (Array.isArray(llmItem.message.content)) {\n    rawText = llmItem.message.content.map(c => c.text || \"\").join(\"\");\n  } else {\n    rawText = llmItem.message.content;\n  }\n} else if (typeof llmItem.content === \"string\") {\n  rawText = llmItem.content;\n} else if (llmItem.text) {\n  rawText = llmItem.text;\n}\n\n// Strip code fences and parse\nlet parsed = null;\nlet parseError = null;\ntry {\n  const cleaned = rawText.replace(/^\\s*```json\\s*/i, '').replace(/\\s*```\\s*$/, '').trim();\n  parsed = JSON.parse(cleaned);\n} catch (e) {\n  parseError = e.message;\n  parsed = {\n    action: null,\n    purpose: \"LLM output could not be parsed\"\n  };\n}\n\n// Discard any role the LLM may have returned. Role is an authenticated\n// input from the request envelope, never an LLM inference.\nif (parsed && typeof parsed === 'object') {\n  delete parsed.requester_role;\n}\n\n// Merge: keep original input, add parsed fields. Role passes through\n// untouched from the form. Action comes only from the classifier with\n// no fail-open default; downstream nodes must handle a null action.\nreturn [{\n  json: {\n    ...previousItem,\n    parsed_request: parsed,\n    parsed_action: parsed.action || null,\n    llm_parse_error: parseError\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ],
+      "id": "3f8333aa-53e7-40fb-bf80-1e878581fff1",
+      "name": "Parse LLM Output"
+    },
+    {
+      "parameters": {
+        "url": "https://api.github.com/repos/moaz-uottawa-099/governedhealth/contents/policies/policies.json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "n8n"
+            },
+            {
+              "name": "Accept",
+              "value": "application/vnd.github.raw+json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        592,
+        0
+      ],
+      "id": "c4340a15-b580-4c16-9750-01c3ba1f989f",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "XTaUGaBHgrfx2aFR",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "data-quality",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -160,
+        192
+      ],
+      "id": "cd4106c4-cbb9-41d5-8723-08eac62826fa",
+      "name": "Webhook1",
+      "webhookId": "d71ab9af-0e08-4b70-83ad-5944e56b8cbb"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ac86a8d3-4222-468f-ae8f-9401fbac18e3",
+              "name": "dataset",
+              "value": "={{ $json.body.dataset}}",
+              "type": "string"
+            },
+            {
+              "id": "f59dc6a3-8c94-4e1c-97df-9e7264b94e4d",
+              "name": "bundle_path",
+              "value": "={{ $json.body.dataset === 'valid' ? 'data/valid_bundle.json' : $json.body.dataset === 'corrupted' ? 'data/corrupted_bundle.json' : null }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        192
+      ],
+      "id": "4b5ef22a-a6e3-4153-a82c-5c6381137e35",
+      "name": "Resolve Dataset"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c23887a7-6b1d-4097-aaa1-834c4896639c",
+              "leftValue": "={{ Boolean($json.bundle_path) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        144,
+        192
+      ],
+      "id": "115afcfa-8559-48ba-816b-2a9766d2501c",
+      "name": "Guard Bundle Path"
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://api.github.com/repos/moaz-uottawa-099/governedhealth/contents/' + $json.bundle_path }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "n8n"
+            },
+            {
+              "name": "Accept",
+              "value": "application/vnd.github.raw+json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        320,
+        176
+      ],
+      "id": "8b2107c7-7abb-4820-8328-ccb773890a52",
+      "name": "Fetch Bundle",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "XTaUGaBHgrfx2aFR",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Data Quality Agent: two in-scope checks on a FHIR collection bundle.\n// Checks: (1) missing required field on Observations (status, code present)\n//         (2) terminology allowlist membership (Observation + Condition codes)\n// Emits: flags array + summary, fail-closed on parse/shape failure.\n// Provenance (dataset, bundle_path) is read from Resolve Dataset directly,\n// because the HTTP Request (Fetch Bundle) replaces the item with its response\n// body and does not carry the selector fields forward.\n\nconst input = $input.first().json;\nconst prov = $('Resolve Dataset').first().json;\n\n// Fail closed if the fetch did not deliver a string under data.\nif (typeof input.data !== 'string') {\n  return [{\n    json: {\n      dataset: prov.dataset || null,\n      bundle_path: prov.bundle_path || null,\n      dq_error: 'BUNDLE-FETCH-SHAPE-INVALID',\n      flags: [],\n      flag_count: 0,\n      total_resources: 0\n    }\n  }];\n}\n\nlet bundle;\ntry {\n  bundle = JSON.parse(input.data);\n} catch (e) {\n  return [{\n    json: {\n      dataset: prov.dataset || null,\n      bundle_path: prov.bundle_path || null,\n      dq_error: 'BUNDLE-PARSE-FAILED',\n      flags: [],\n      flag_count: 0,\n      total_resources: 0\n    }\n  }];\n}\n\n// Closed value sets (allowlist). Codes present but not listed are flagged.\nconst ALLOWED_OBS_CODES = ['8310-5'];\nconst ALLOWED_CONDITION_CODES = ['E11.9'];\n\nconst entries = Array.isArray(bundle.entry) ? bundle.entry : [];\nconst flags = [];\n\nfor (const e of entries) {\n  const r = e && e.resource ? e.resource : null;\n  if (!r) continue;\n\n  const id = r.id || '(no-id)';\n  const type = r.resourceType || '(no-type)';\n\n  // Check 1: missing required field, Observations only (completeness).\n  if (type === 'Observation') {\n    if (r.status === undefined || r.status === null) {\n      flags.push({\n        resource_id: id,\n        resource_type: type,\n        check: 'missing_required_field',\n        concern: 'completeness',\n        detail: 'Observation.status is missing'\n      });\n    }\n    if (r.code === undefined || r.code === null) {\n      flags.push({\n        resource_id: id,\n        resource_type: type,\n        check: 'missing_required_field',\n        concern: 'completeness',\n        detail: 'Observation.code is missing'\n      });\n    }\n  }\n\n  // Check 2: terminology allowlist (conformance).\n  // Only evaluated when a code is actually present, so a missing code\n  // is reported once by Check 1, not double-reported here.\n  if (type === 'Observation' && r.code) {\n    const coding = r.code.coding && r.code.coding[0] ? r.code.coding[0] : null;\n    const codeVal = coding ? coding.code : undefined;\n    if (codeVal !== undefined && !ALLOWED_OBS_CODES.includes(codeVal)) {\n      flags.push({\n        resource_id: id,\n        resource_type: type,\n        check: 'invalid_terminology_code',\n        concern: 'conformance',\n        detail: 'Observation code ' + codeVal + ' not in allowlist'\n      });\n    }\n  }\n\n  if (type === 'Condition' && r.code) {\n    const coding = r.code.coding && r.code.coding[0] ? r.code.coding[0] : null;\n    const codeVal = coding ? coding.code : undefined;\n    if (codeVal !== undefined && !ALLOWED_CONDITION_CODES.includes(codeVal)) {\n      flags.push({\n        resource_id: id,\n        resource_type: type,\n        check: 'invalid_terminology_code',\n        concern: 'conformance',\n        detail: 'Condition code ' + codeVal + ' not in allowlist'\n      });\n    }\n  }\n}\n\nreturn [{\n  json: {\n    dataset: prov.dataset || null,\n    bundle_path: prov.bundle_path || null,\n    total_resources: entries.length,\n    flags: flags,\n    flag_count: flags.length\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        176
+      ],
+      "id": "fc8188ea-5471-4b78-9073-7ae2492d6098",
+      "name": "Data Quality Checks"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Audit DQ - Data Quality lineage receipt (Day 14)\n// Mirrors the Audit and Lineage receipt discipline: same id/timestamp format,\n// same decisions-array container, same SHA-256 tamper-evidence.\n// Differs in payload: carries a data-quality assessment, not an access decision.\n// No phipa_principles block: an internal integrity check makes no access\n// decision, so PHIPA principles are not engaged (documented in mapping_note).\n\nconst crypto = require('crypto');\nconst input = $input.first().json;\n\n// Mint id and timestamp in the SAME format as the access receipts.\n// Matches the access-chain Edit Fields convention exactly:\n//   receipt_id = $now.toMillis() + \"-\" + Math.floor(Math.random()*100000)\n//   timestamp  = $now.toISO()  (local offset, e.g. -04:00)\nconst receiptId = $now.toMillis() + \"-\" + Math.floor(Math.random() * 100000);\nconst timestamp = $now.toISO();\n\n// The DQ agent's \"decision\" is its assessment, recorded in the same\n// decisions-array container the access receipts use.\nconst dqDecision = {\n  agent: \"DataQuality\",\n  dataset: input.dataset || null,\n  bundle_path: input.bundle_path || null,\n  total_resources: (input.total_resources !== undefined) ? input.total_resources : null,\n  flag_count: (input.flag_count !== undefined) ? input.flag_count : null,\n  flags: Array.isArray(input.flags) ? input.flags : [],\n  dq_error: input.dq_error || null\n};\n\n// clean when no flags, flagged when any flag present. If a fail-closed\n// error came through, outcome is flagged (the run did not produce a clean read).\nconst outcome = (input.dq_error)\n  ? \"flagged\"\n  : ((input.flag_count === 0) ? \"clean\" : \"flagged\");\n\nconst nistMapping = [\"MAP-3.4\", \"MEASURE-2.7\"];\n\nconst receipt = {\n  receipt_id: receiptId,\n  timestamp: timestamp,\n  request: {\n    dataset: input.dataset || null,\n    bundle_path: input.bundle_path || null\n  },\n  decisions: [dqDecision],\n  framework_mapping: {\n    nist_ai_rmf: nistMapping,\n    mapping_note: \"PHIPA principles not engaged: data quality is an internal integrity check, not an access decision.\"\n  },\n  outcome: outcome\n};\n\n// Hash for tamper-evidence, same discipline as Audit and Lineage:\n// stringify the receipt, hash, then attach the hash field last.\nconst hashable = JSON.stringify(receipt);\nreceipt.final_artifact_hash = crypto\n  .createHash('sha256')\n  .update(hashable)\n  .digest('hex');\n\nreturn [{ json: { receipt: receipt } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        176
+      ],
+      "id": "dc8d864d-5fe2-4164-8115-cbe845d2cc14",
+      "name": "Audit DQ"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Audit DQ FailClosed - fail-closed lineage receipt for the guard's false branch.\n// Fires when the dataset selector did not resolve to a known bundle path\n// (Guard Bundle Path routed the item to false because bundle_path was null).\n// Emits a receipt in the SAME shape as Audit DQ, recording the refusal,\n// so a bad selector cannot bypass governance: every request leaves a receipt.\n\nconst crypto = require('crypto');\nconst input = $input.first().json;\n\n// Same id/timestamp convention as the access receipts and Audit DQ.\nconst receiptId = $now.toMillis() + \"-\" + Math.floor(Math.random() * 100000);\nconst timestamp = $now.toISO();\n\n// The item on the false branch still carries Resolve Dataset's output:\n// dataset = the rejected selector value, bundle_path = null.\nconst dqDecision = {\n  agent: \"DataQuality\",\n  dataset: input.dataset || null,\n  bundle_path: input.bundle_path || null,\n  total_resources: null,\n  flag_count: null,\n  flags: [],\n  dq_error: \"DQ-FAIL-CLOSED\"\n};\n\nconst receipt = {\n  receipt_id: receiptId,\n  timestamp: timestamp,\n  request: {\n    dataset: input.dataset || null,\n    bundle_path: input.bundle_path || null\n  },\n  decisions: [dqDecision],\n  framework_mapping: {\n    nist_ai_rmf: [\"MAP-3.4\", \"MEASURE-2.7\"],\n    mapping_note: \"PHIPA principles not engaged: data quality is an internal integrity check, not an access decision.\"\n  },\n  outcome: \"flagged\"\n};\n\nconst hashable = JSON.stringify(receipt);\nreceipt.final_artifact_hash = crypto\n  .createHash('sha256')\n  .update(hashable)\n  .digest('hex');\n\nreturn [{ json: { receipt: receipt } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        352
+      ],
+      "id": "cc733259-5fb5-43d1-80a0-9b6aff16f01e",
+      "name": "Audit DQ FailClosed"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        624,
+        352
+      ],
+      "id": "19fe1220-d3dc-4d85-9a06-60c3bb22f4ef",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "89943e94-cc6b-4460-b2bb-b83a00a3c6bd",
+              "leftValue": "={{ $json.receipt.decisions[0].action }}",
+              "rightValue": "aggregate_statistics",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "aade9ac3-79af-4e34-850e-8a1d627339bd",
+              "leftValue": "={{ $json.receipt.decisions[0].decision }}",
+              "rightValue": "allow",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1056,
+        0
+      ],
+      "id": "2899d79f-4b09-4bee-9b17-96971c2dd213",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "url": "https://api.github.com/repos/moaz-uottawa-099/governedhealth/contents/data/cohort_bundle.json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "n8n"
+            },
+            {
+              "name": "Accept",
+              "value": "application/vnd.github.raw+json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1248,
+        -16
+      ],
+      "id": "096ab239-58f4-4dd4-b126-7942a172e1bb",
+      "name": "Fetch Cohort Bundle",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "XTaUGaBHgrfx2aFR",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Analytics Compute - Day 16\n// Runs ONLY on the IF true branch: aggregate_statistics AND allow.\n// Non-bypass is a property of the graph, not of a check in this file:\n// this node's only inbound edge is the gate's true output.\n//\n// Reads the suppression threshold from the LIVE policy file by capability\n// lookup (role + jurisdiction + permits aggregate_statistics), never by\n// hardcoded policy id and never by hardcoded cell size. Swap is data.\n\nconst bundleRaw = $input.first().json.data;\nconst parentReceipt = $('Audit and Lineage').first().json.receipt;\nconst accessDecision = parentReceipt.decisions[0];\n\nconst role = accessDecision.agent ? parentReceipt.request.requester_role : null;\nconst jurisdiction = accessDecision.jurisdiction || null;\n\nconst flags = [];\n\n// --- 1. Resolve the suppression threshold from the live policy file ---\nlet minimumCellSize = Infinity;   // fail closed: suppress everything\nlet thresholdSource = null;\n\ntry {\n  const policyRaw = $('HTTP Request').first().json.data;\n  const policies = JSON.parse(policyRaw).policies;\n\n  const governing = policies.find(function (p) {\n    const roleMatch = p.applies_to_role === role || p.applies_to_role === \"*\";\n    const jurMatch = !p.jurisdiction || p.jurisdiction === jurisdiction;\n    const permits = p.permits || [];\n    return roleMatch && jurMatch && permits.indexOf(\"aggregate_statistics\") !== -1;\n  });\n\n  if (!governing) {\n    flags.push(\"No governing policy found for aggregate_statistics. Suppressing all cells.\");\n  } else {\n    const pre = (governing.preconditions || []).find(function (x) {\n      return x.requires === \"small_cell_suppression_applied\";\n    });\n    if (!pre || typeof pre.minimum_cell_size !== \"number\") {\n      flags.push(\"Governing policy \" + governing.policy_id +\n        \" declares no numeric minimum_cell_size. Suppressing all cells.\");\n    } else {\n      minimumCellSize = pre.minimum_cell_size;\n      thresholdSource = {\n        policy_id: governing.policy_id,\n        precondition_id: pre.precondition_id,\n        basis: pre.basis\n      };\n    }\n  }\n} catch (e) {\n  flags.push(\"Policy source unreadable for threshold resolution: \" + e.message +\n    \". Suppressing all cells.\");\n}\n\n// --- 2. Parse the cohort bundle ---\nlet entries = [];\ntry {\n  const bundle = JSON.parse(bundleRaw);\n  entries = Array.isArray(bundle.entry) ? bundle.entry : [];\n  if (entries.length === 0) {\n    flags.push(\"Bundle contained no entries.\");\n  }\n} catch (e) {\n  flags.push(\"Cohort bundle unparseable: \" + e.message);\n}\n\n// --- 3. Index patients, then find distinct diabetes patients ---\nconst DIABETES_CODE = \"E11.9\";\n\nconst genderById = {};\nfor (const entry of entries) {\n  const r = entry.resource;\n  if (r && r.resourceType === \"Patient\" && r.id) {\n    genderById[r.id] = r.gender || \"unknown\";\n  }\n}\n\nconst diabetesPatientIds = new Set();\nfor (const entry of entries) {\n  const r = entry.resource;\n  if (!r || r.resourceType !== \"Condition\") continue;\n  const codings = (r.code && r.code.coding) || [];\n  const isDiabetes = codings.some(function (c) { return c.code === DIABETES_CODE; });\n  if (!isDiabetes) continue;\n  const ref = r.subject && r.subject.reference;\n  if (!ref) continue;\n  const pid = ref.split(\"/\")[1];\n  if (pid && genderById[pid] !== undefined) {\n    diabetesPatientIds.add(pid);\n  }\n}\n\n// --- 4. Count distinct patients by gender ---\nconst rawCounts = {};\nfor (const pid of diabetesPatientIds) {\n  const g = genderById[pid];\n  rawCounts[g] = (rawCounts[g] || 0) + 1;\n}\n\n// --- 5. Apply small-cell suppression ---\nconst cells = [];\nlet suppressedCellCount = 0;\nfor (const g of Object.keys(rawCounts).sort()) {\n  const n = rawCounts[g];\n  const suppress = n < minimumCellSize;\n  if (suppress) suppressedCellCount++;\n  cells.push({\n    gender: g,\n    count: suppress ? null : n,\n    suppressed: suppress\n  });\n}\n\nconst analytics = {\n  agent: \"Analytics\",\n  query: {\n    measure: \"distinct_patient_count\",\n    condition_code: DIABETES_CODE,\n    condition_system: \"http://hl7.org/fhir/sid/icd-10-cm\",\n    group_by: \"Patient.gender\",\n    bundle_path: \"data/cohort_bundle.json\"\n  },\n  safeguard: {\n    name: \"small_cell_suppression\",\n    minimum_cell_size: (minimumCellSize === Infinity) ? null : minimumCellSize,\n    threshold_source: thresholdSource,\n    enforced_by: \"Analytics\"\n  },\n  cohort_size: diabetesPatientIds.size,\n  cells: cells,\n  suppressed_cell_count: suppressedCellCount,\n  flags: flags\n};\n\nreturn [{\n  json: {\n    analytics: analytics,\n    access_receipt_id: parentReceipt.receipt_id,\n    access_receipt_hash: parentReceipt.final_artifact_hash\n  }\n}];$input.item;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        160
+      ],
+      "id": "91eb8fbc-3294-40f9-8ca8-5418f5a1b311",
+      "name": "Analytics Compute"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Audit Analytics - Analytics governance receipt (Day 16)\n// Mirrors Audit and Lineage and Audit DQ receipt discipline: same id/timestamp\n// format, same decisions-array container, same SHA-256 tamper-evidence.\n//\n// Differs in one structural respect: this receipt CHAINS to its parent access\n// receipt. The chain is what proves the computation was authorized. An analytics\n// receipt with no valid parent is, by construction, unreachable: this node's\n// only inbound path originates at the access gate's true output.\n\nconst crypto = require('crypto');\nconst input = $input.first().json;\n\n// Mint id and timestamp in the SAME format as the access receipts.\nconst receiptId = $now.toMillis() + \"-\" + Math.floor(Math.random() * 100000);\nconst timestamp = $now.toISO();\n\nconst analytics = input.analytics;\n\n// Suppression is what makes the released output disclosable. If any cell was\n// released while the safeguard could not be resolved, that is a governance\n// failure, not merely a data-quality flag.\nconst safeguardResolved = analytics\n  && analytics.safeguard\n  && typeof analytics.safeguard.minimum_cell_size === \"number\";\n\nconst outcome = (safeguardResolved && (!analytics.flags || analytics.flags.length === 0))\n  ? \"released\"\n  : \"released_with_flags\";\n\nconst nistMapping = [\"GOVERN-1.1\", \"MAP-3.4\", \"MEASURE-2.7\", \"MANAGE-4.1\"];\n\nconst receipt = {\n  receipt_id: receiptId,\n  timestamp: timestamp,\n  chained_from: {\n    access_receipt_id: input.access_receipt_id || null,\n    access_receipt_hash: input.access_receipt_hash || null\n  },\n  request: {\n    measure: analytics.query.measure,\n    condition_code: analytics.query.condition_code,\n    group_by: analytics.query.group_by,\n    bundle_path: analytics.query.bundle_path\n  },\n  decisions: [analytics],\n  framework_mapping: {\n    nist_ai_rmf: nistMapping,\n    phipa_principles: [\"limiting_use\", \"accountability\"],\n    mapping_note: \"Disclosure safeguard (small-cell suppression) enforced at the analytics layer using the threshold declared by the governing policy.\"\n  },\n  outcome: outcome\n};\n\n// Hash for tamper-evidence, same discipline as the other audit nodes:\n// stringify the receipt, hash, then attach the hash field last.\nconst hashable = JSON.stringify(receipt);\nreceipt.final_artifact_hash = crypto\n  .createHash('sha256')\n  .update(hashable)\n  .digest('hex');\n\nreturn [{ json: { receipt: receipt } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        368
+      ],
+      "id": "41510074-7909-481b-a3fa-bb9699b4cf74",
+      "name": "Audit Analytics"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Claude",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Access Control": {
+      "main": [
+        [
+          {
+            "node": "Audit and Lineage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Audit and Lineage": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude": {
+      "main": [
+        [
+          {
+            "node": "Parse LLM Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse LLM Output": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Access Control",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Resolve Dataset",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve Dataset": {
+      "main": [
+        [
+          {
+            "node": "Guard Bundle Path",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guard Bundle Path": {
+      "main": [
+        [
+          {
+            "node": "Fetch Bundle",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Audit DQ FailClosed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Bundle": {
+      "main": [
+        [
+          {
+            "node": "Data Quality Checks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data Quality Checks": {
+      "main": [
+        [
+          {
+            "node": "Audit DQ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Audit DQ": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Audit DQ FailClosed": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Fetch Cohort Bundle",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Cohort Bundle": {
+      "main": [
+        [
+          {
+            "node": "Analytics Compute",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analytics Compute": {
+      "main": [
+        [
+          {
+            "node": "Audit Analytics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Audit Analytics": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "ff67926e-d1f3-42d1-9784-6a64624f1948",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "deb8fa4ddeba35ca0860c117dbe5348e061093a9925815dc42eb94f706c427a5"
+  },
+  "nodeGroups": [],
+  "id": "4hNaGlnwg9lXzabc",
+  "tags": []
+}

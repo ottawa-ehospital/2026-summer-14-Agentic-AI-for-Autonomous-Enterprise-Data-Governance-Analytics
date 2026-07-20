@@ -1,0 +1,45 @@
+{
+  "receipt_id": "1782596520937-83629",
+  "timestamp": "2026-06-27T17:42:00.938-04:00",
+  "request": {
+    "raw_text": "export this patient's full record to the external registry",
+    "requester_role": "research_coordinator",
+    "purpose": null,
+    "parsed_action": "record_export"
+  },
+  "decisions": [
+    {
+      "agent": "AccessControl",
+      "action": "record_export",
+      "jurisdiction": "ON",
+      "decision": "allow",
+      "policies_consulted": [
+        "POL-001",
+        "POL-002",
+        "POL-004",
+        "POL-005",
+        "POL-006"
+      ],
+      "scope_granted": {
+        "data_categories": [
+          "demographics",
+          "diagnoses",
+          "medications"
+        ]
+      },
+      "preconditions_satisfied": null,
+      "rationale": "Allowed by POL-005: Research coordinator can export records (Ontario)"
+    }
+  ],
+  "framework_mapping": {
+    "nist_ai_rmf": [
+      "GOVERN-1.1",
+      "MAP-3.4"
+    ],
+    "phipa_principles": [
+      "accountability"
+    ]
+  },
+  "outcome": "allowed",
+  "final_artifact_hash": "2dc801066507fd9f68464f7148ade8ebe1c89dbad56ecf96de3ddd91270d23a6"
+}

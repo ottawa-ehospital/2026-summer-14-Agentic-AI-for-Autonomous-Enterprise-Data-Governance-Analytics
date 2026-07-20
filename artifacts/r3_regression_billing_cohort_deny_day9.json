@@ -1,0 +1,36 @@
+{
+  "receipt_id": "1781454210215-15748",
+  "timestamp": "2026-06-14T12:23:30.215-04:00",
+  "request": {
+    "raw_text": "Construct a cohort of patients with cardiac procedures from Q1 2025 for the research team.",
+    "requester_role": "billing_analyst",
+    "purpose": null,
+    "parsed_action": "cohort_construction"
+  },
+  "decisions": [
+    {
+      "agent": "AccessControl",
+      "action": "cohort_construction",
+      "decision": "deny",
+      "policies_consulted": [
+        "POL-003",
+        "POL-004"
+      ],
+      "scope_granted": null,
+      "rationale": "Denied by POL-003: Billing analyst cannot construct research cohorts"
+    }
+  ],
+  "framework_mapping": {
+    "nist_ai_rmf": [
+      "GOVERN-1.1",
+      "MAP-3.4",
+      "MANAGE-4.1"
+    ],
+    "phipa_principles": [
+      "accountability"
+    ]
+  },
+  "outcome": "denied",
+  "final_artifact_hash": "56d833c459964fc218b03eb24f5e1401d3304b5e8833267f4c77667a2f5b456f"
+}
+}

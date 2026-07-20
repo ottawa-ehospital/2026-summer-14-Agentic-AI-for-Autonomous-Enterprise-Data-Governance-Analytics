@@ -1,0 +1,37 @@
+{
+  "receipt_id": "1783640079540-29242",
+  "timestamp": "2026-07-09T19:34:39.541-04:00",
+  "request": {
+    "raw_text": "Construct a research cohort of patients with diabetes",
+    "requester_role": "billing_analyst",
+    "purpose": "research",
+    "parsed_action": "cohort_construction"
+  },
+  "decisions": [
+    {
+      "agent": "AccessControl",
+      "action": "cohort_construction",
+      "jurisdiction": "ON",
+      "decision": "deny",
+      "policies_consulted": [
+        "POL-003",
+        "POL-004"
+      ],
+      "scope_granted": null,
+      "preconditions_satisfied": null,
+      "rationale": "Denied by POL-003: Billing analyst cannot construct research cohorts"
+    }
+  ],
+  "framework_mapping": {
+    "nist_ai_rmf": [
+      "GOVERN-1.1",
+      "MAP-3.4",
+      "MANAGE-4.1"
+    ],
+    "phipa_principles": [
+      "accountability"
+    ]
+  },
+  "outcome": "denied",
+  "final_artifact_hash": "2ff48a65e8ae87137090f24003782a0a5f9fc452fa103cd8bdc76af6d7334143"
+}

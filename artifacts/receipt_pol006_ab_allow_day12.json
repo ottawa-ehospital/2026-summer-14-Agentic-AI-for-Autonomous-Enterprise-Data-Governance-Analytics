@@ -1,0 +1,50 @@
+{
+  "receipt_id": "1782596674454-95597",
+  "timestamp": "2026-06-27T17:44:34.455-04:00",
+  "request": {
+    "raw_text": "export this patient's full record to the external registry",
+    "requester_role": "research_coordinator",
+    "purpose": null,
+    "parsed_action": "record_export"
+  },
+  "decisions": [
+    {
+      "agent": "AccessControl",
+      "action": "record_export",
+      "jurisdiction": "AB",
+      "decision": "allow",
+      "policies_consulted": [
+        "POL-001",
+        "POL-002",
+        "POL-004",
+        "POL-005",
+        "POL-006"
+      ],
+      "scope_granted": {
+        "data_categories": [
+          "demographics",
+          "diagnoses",
+          "medications"
+        ]
+      },
+      "preconditions_satisfied": [
+        {
+          "precondition_id": "PRE-AB-AGREEMENT",
+          "basis": "Alta Reg 70/2001 s.8(4)"
+        }
+      ],
+      "rationale": "Allowed by POL-006: Research coordinator can export records (Alberta) (preconditions satisfied)"
+    }
+  ],
+  "framework_mapping": {
+    "nist_ai_rmf": [
+      "GOVERN-1.1",
+      "MAP-3.4"
+    ],
+    "phipa_principles": [
+      "accountability"
+    ]
+  },
+  "outcome": "allowed",
+  "final_artifact_hash": "0171bbc27bd1781cc69a0296a75c94bed65e507d95ecea111796e84e11a36451"
+}

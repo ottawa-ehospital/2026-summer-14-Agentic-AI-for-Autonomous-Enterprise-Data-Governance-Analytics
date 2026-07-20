@@ -1,0 +1,37 @@
+{
+  "receipt_id": "1781454276557-49662",
+  "timestamp": "2026-06-14T12:24:36.557-04:00",
+  "request": {
+    "raw_text": "Pull the full clinical notes and physician narratives for patient MRN-44218 to review treatment history.",
+    "requester_role": "research_coordinator",
+    "purpose": null,
+    "parsed_action": "clinical_notes_access"
+  },
+  "decisions": [
+    {
+      "agent": "AccessControl",
+      "action": "clinical_notes_access",
+      "decision": "deny",
+      "policies_consulted": [
+        "POL-001",
+        "POL-002",
+        "POL-004"
+      ],
+      "scope_granted": null,
+      "rationale": "Denied by POL-002: Research coordinator cannot access clinical notes"
+    }
+  ],
+  "framework_mapping": {
+    "nist_ai_rmf": [
+      "GOVERN-1.1",
+      "MAP-3.4",
+      "MANAGE-4.1"
+    ],
+    "phipa_principles": [
+      "accountability"
+    ]
+  },
+  "outcome": "denied",
+  "final_artifact_hash": "d29efb1dab2b25d4c10d572a23245ec79b35ac0539bc68e67df9ce929d3ad132"
+}
+

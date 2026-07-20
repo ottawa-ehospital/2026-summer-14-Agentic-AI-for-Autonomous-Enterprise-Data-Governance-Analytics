@@ -1,0 +1,42 @@
+{
+  "receipt_id": "1783639866582-20728",
+  "timestamp": "2026-07-09T19:31:06.583-04:00",
+  "request": {
+    "raw_text": "Give me aggregate counts of diabetic patients by gender",
+    "requester_role": "research_coordinator",
+    "purpose": "research",
+    "parsed_action": "aggregate_statistics"
+  },
+  "decisions": [
+    {
+      "agent": "AccessControl",
+      "action": "aggregate_statistics",
+      "jurisdiction": "ON",
+      "decision": "deny",
+      "policies_consulted": [
+        "POL-001",
+        "POL-002",
+        "POL-004",
+        "POL-005",
+        "POL-006",
+        "POL-007",
+        "POL-PRECONDITION-UNMET"
+      ],
+      "scope_granted": null,
+      "preconditions_satisfied": null,
+      "rationale": "Permitted by POL-007 but precondition PRE-AGG-SUPPRESSION (CIHI minimum cell size of 5, small-cell suppression for de-identification) is not met. Failing closed."
+    }
+  ],
+  "framework_mapping": {
+    "nist_ai_rmf": [
+      "GOVERN-1.1",
+      "MAP-3.4",
+      "MANAGE-4.1"
+    ],
+    "phipa_principles": [
+      "accountability"
+    ]
+  },
+  "outcome": "denied",
+  "final_artifact_hash": "ebad107ff9bec355249eb107620d69848161f5d57cce069f724610b065c32d47"
+}

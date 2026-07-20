@@ -1,0 +1,41 @@
+{
+  "receipt_id": "1782596814682-19219",
+  "timestamp": "2026-06-27T17:46:54.683-04:00",
+  "request": {
+    "raw_text": "export this patient's full record to the external registry",
+    "requester_role": "research_coordinator",
+    "purpose": null,
+    "parsed_action": "record_export"
+  },
+  "decisions": [
+    {
+      "agent": "AccessControl",
+      "action": "record_export",
+      "jurisdiction": null,
+      "decision": "deny",
+      "policies_consulted": [
+        "POL-001",
+        "POL-002",
+        "POL-004",
+        "POL-005",
+        "POL-006",
+        "POL-NO-JURISDICTION"
+      ],
+      "scope_granted": null,
+      "preconditions_satisfied": null,
+      "rationale": "Action 'record_export' is jurisdiction-gated but the request carried no jurisdiction. Failing closed."
+    }
+  ],
+  "framework_mapping": {
+    "nist_ai_rmf": [
+      "GOVERN-1.1",
+      "MAP-3.4",
+      "MANAGE-4.1"
+    ],
+    "phipa_principles": [
+      "accountability"
+    ]
+  },
+  "outcome": "denied",
+  "final_artifact_hash": "2ac3e0a99b303e65404022a158739df8d682949f2cf4e0f59f70c26e08dceba4"
+}

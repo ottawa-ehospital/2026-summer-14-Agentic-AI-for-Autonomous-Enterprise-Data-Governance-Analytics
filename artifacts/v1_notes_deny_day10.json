@@ -1,0 +1,26 @@
+{
+  "receipt_id": "1782057510840-84441",
+  "timestamp": "2026-06-21T11:58:30.840-04:00",
+  "request": {
+    "raw_text": "Show me the full clinical notes for patient 12345",
+    "requester_role": "research_coordinator",
+    "purpose": null,
+    "parsed_action": "clinical_notes_access"
+  },
+  "decisions": [
+    {
+      "agent": "AccessControl",
+      "action": "clinical_notes_access",
+      "decision": "deny",
+      "policies_consulted": ["POL-001", "POL-002", "POL-004"],
+      "scope_granted": null,
+      "rationale": "Denied by POL-002: Research coordinator cannot access clinical notes"
+    }
+  ],
+  "framework_mapping": {
+    "nist_ai_rmf": ["GOVERN-1.1", "MAP-3.4", "MANAGE-4.1"],
+    "phipa_principles": ["accountability"]
+  },
+  "outcome": "denied",
+  "final_artifact_hash": "d17cb1eefd55885d37fc33aa9c4cb15e455457a5d3bb2e928c91b7a8e970420f"
+}
